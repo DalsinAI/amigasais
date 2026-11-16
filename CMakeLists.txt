@@ -1,0 +1,204 @@
+cmake_minimum_required(VERSION 4.0)
+
+# This enables the new MSVC runtime library selection mechanism.
+cmake_policy(SET CMP0091 NEW)
+
+# on macos, target 10.11
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.11)
+
+project(strange VERSION 1.7.0 LANGUAGES C CXX)
+
+# The demonstration version of SAIS is only kept for historical reference, and
+# is not the default, ever.
+option(BUILD_DEMO "Build the Demo Version of SAIS" OFF)
+
+# This relates to SAIS's original internal logging, not the GPL version's SDL Logging which is always on.
+option(USE_LOG "Enable game logging" OFF)
+
+# work out if we need libm.
+find_library(LIBM NAMES m)
+
+find_package(SDL2 REQUIRED)
+find_package(SDL2_mixer REQUIRED)
+find_package(PhysFS REQUIRED)
+
+set(SAIS_LIBS SDL2::SDL2 SDL2::SDL2main SDL2_mixer::SDL2_mixer physfs-static)
+
+set(SAIS_SRC
+    src/cards.c
+    src/combat.c
+    src/combat_display.c
+    src/combat_init.c
+    src/combat_sim.c
+    src/combat_weapons.c
+    src/endgame.c
+    src/font.c
+    src/gfx.c
+    src/interface.c
+    src/is_fileio.c
+    src/main.c
+    src/modconfig.c
+    src/sdl_main.c
+    src/sound.c
+    src/sprites.c
+    src/starmap.c
+    src/starmap_encounters.c
+    src/starmap_init.c
+    src/starmap_inventory.c
+    src/startgame.c
+    src/textstr.c
+    src/safe_cstr.h
+    src/port.h
+    src/log.h
+    )
+
+### OS specific sources
+if(CMAKE_SYSTEM_NAME MATCHES Windows)
+    set(SAIS_SYS_SRCS
+            src/portable/safe_cstr.c
+            src/sdl/abort.c
+            src/sdl/log.c
+            src/sdl/sdl_iface.c
+            src/sdl/sdl_gfx.c
+            src/sdl/sdl_sound.c
+            src/sdl/physfsrwops.c
+
+    )
+elseif(CMAKE_SYSTEM_NAME MATCHES Darwin)
+    set(SAIS_SYS_SRCS
+            src/portable/safe_cstr.c
+            src/sdl/abort.c
+            src/sdl/log.c
+            src/sdl/sdl_iface.c
+            src/sdl/sdl_gfx.c
+            src/sdl/sdl_sound.c
+            src/sdl/physfsrwops.c
+    )
+else()
+    set(SAIS_SYS_SRCS
+            src/portable/safe_cstr.c
+            src/sdl/abort.c
+            src/sdl/log.c
+            src/sdl/sdl_iface.c
+            src/sdl/sdl_gfx.c
+            src/sdl/sdl_sound.c
+            src/sdl/physfsrwops.c
+    )
+endif()
+
+if(BUILD_DEMO)
+    add_executable(strangedemo WIN32 MACOSX_BUNDLE ${SAIS_SRC} ${SAIS_SYS_SRCS})
+    target_link_directories(strangedemo PRIVATE ${SAIS_LIB_DIRS})
+    target_link_libraries(strangedemo
+        PRIVATE
+        ${SAIS_LIBS}
+        ${LIBM})
+    target_include_directories(strangedemo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_compile_definitions(strangedemo PRIVATE DEMO_VERSION=1)
+
+    install(TARGETS strangedemo RUNTIME DESTINATION . BUNDLE DESTINATION .)
+    install(DIRECTORY demo/ DESTINATION .)
+
+    add_subdirectory(demo-data)
+else()
+    add_executable(strange WIN32 MACOSX_BUNDLE ${SAIS_SRC} ${SAIS_SYS_SRCS})
+    target_link_directories(strange PRIVATE ${SAIS_LIB_DIRS})
+    target_link_libraries(strange
+        PRIVATE
+        ${SAIS_LIBS}
+        ${LIBM})
+    target_include_directories(strange PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    install(TARGETS strange RUNTIME DESTINATION . BUNDLE DESTINATION .)
+    install(DIRECTORY full/ DESTINATION .)
+
+    add_subdirectory(full-data)
+endif()
+
+# MSVC Specific bits:
+#
+#  * Include the resource script which sets our icon.
+#  * Force the runtime type to MT(d).
+#  * Supresss the MSVC "Insecure C Runtime" warnings which are largely relating
+#    to ANSI C functions.
+#
+if(MSVC)
+    if(BUILD_DEMO)
+        target_sources(strangedemo PRIVATE
+            src/Script1.rc)
+        set_property(TARGET strangedemo PROPERTY
+            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    else()
+        target_sources(strange PRIVATE
+            src/Script1.rc)
+        set_property(TARGET strange PROPERTY
+            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
+
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS=1)
+endif()
+
+# macOS Specific bits:
+#
+# * Set up the macOS bundle details.
+# * Embed the game data into the bundle.
+# * Ensure we build the game data before the executable.
+if(CMAKE_SYSTEM_NAME MATCHES Darwin)
+    if(BUILD_DEMO)
+        set_target_properties(strangedemo PROPERTIES
+                OUTPUT_NAME "Strange Adventures in Infinite Space Demo"
+                MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in"
+                MACOSX_FRAMEWORK_IDENTIFIER "au.com.ecsim.saisgpldemo"
+                MACOSX_BUNDLE TRUE
+                MACOSX_BUNDLE_BUNDLE_NAME "Strange Adventures Demo"
+                MACOSX_BUNDLE_COPYRIGHT "Copyright © 2020 Chris Collins, Copyright © 2005 Richard Carlson, Iikka Keranen and William Sears"
+                MACOSX_BUNDLE_ICON_FILE "sais.icns"
+                XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME YES)
+        target_sources(strangedemo PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/demo-data/saisdemo.zip" "src/sais.icns")
+        set_property(TARGET strangedemo PROPERTY
+                RESOURCE "${CMAKE_CURRENT_BINARY_DIR}/demo-data/saisdemo.zip;src/sais.icns")
+        set_property(SOURCE "${CMAKE_CURRENT_BINARY_DIR}/demo-data/saisdemo.zip" PROPERTY GENERATED TRUE)
+        add_dependencies(strangedemo demo_data)
+    else()
+        set_target_properties(strange PROPERTIES
+                OUTPUT_NAME "Strange Adventures in Infinite Space"
+                MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in"
+                MACOSX_FRAMEWORK_IDENTIFIER "au.com.ecsim.saisgpl"
+                MACOSX_BUNDLE TRUE
+                MACOSX_BUNDLE_BUNDLE_NAME "Strange Adventures"
+                MACOSX_BUNDLE_COPYRIGHT "Copyright © 2020 Chris Collins, Copyright © 2005 Richard Carlson, Iikka Keranen and William Sears"
+                MACOSX_BUNDLE_ICON_FILE "sais.icns"
+                XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME YES)
+        target_sources(strange PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/full-data/saisdata.zip" "src/sais.icns")
+        set_property(TARGET strange PROPERTY
+                RESOURCE "${CMAKE_CURRENT_BINARY_DIR}/full-data/saisdata.zip;src/sais.icns")
+        set_property(SOURCE "${CMAKE_CURRENT_BINARY_DIR}/full-data/saisdata.zip" PROPERTY GENERATED TRUE)
+        add_dependencies(strange retail_data)
+    endif()
+endif()
+
+if(USE_LOG)
+    add_compile_definitions(LOG_OUTPUT=1)
+endif()
+
+if(NOT BUILD_DEMO)
+    set(CPACK_WIX_UPGRADE_GUID E709D29C-1BD8-4679-A8CA-9D40567771F5)
+    if(CMAKE_SYSTEM_NAME MATCHES Linux)
+        set(CPACK_GENERATOR TGZ)
+        set(CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR})
+    elseif(CMAKE_SYSTEM_NAME MATCHES Windows)
+        set(CPACK_GENERATOR ZIP;WIX)
+        set(CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR})
+    elseif(CMAKE_SYSTEM_NAME MATCHES Darwin)
+        set(CPACK_GENERATOR ZIP;DragNDrop)
+        set(CPACK_SYSTEM_NAME macOS-${CMAKE_SYSTEM_PROCESSOR})
+    endif()
+    set(CPACK_PACKAGE_NAME  "Strange Adventures in Infinite Space GPL")
+    set(CPACK_PACKAGE_FILE_NAME "SAIS-GPL-${CMAKE_PROJECT_VERSION}-${CPACK_SYSTEM_NAME}")
+    set(CPACK_PACKAGE_VENDOR "FreeSAIS")
+    set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/kuroneko/sais/")
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY "SAIS-GPL")
+    set(CPACK_RESOURCE_FILE_README ${CMAKE_SOURCE_DIR}/full/README1st.txt)
+    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/full/LICENSES.txt)
+    set(CPACK_PACKAGE_EXECUTABLES "strange;Strange Adventures in Infinite Space GPL")
+    include(CPack)
+endif()
