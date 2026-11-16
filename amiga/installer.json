@@ -1,0 +1,14 @@
+{
+  "name": "Strange Adventures in Infinite Space",
+  "version": "1.7.0-gfos1",
+  "drawer": "StrangeAdventures",
+  "program": "StrangeAdventures",
+  "cpu": "68040",
+  "fpu": true,
+  "space": 18000000,
+  "modules": ["SDL2.module", "SDL2_mixer.module"],
+  "keep": ["User"],
+  "parent": "Work:Games",
+  "badge": "icons/art/sais.png",
+  "script": "Install-StrangeAdventures"
+}

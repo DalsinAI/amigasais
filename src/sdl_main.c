@@ -17,6 +17,7 @@
 #include <SDL.h>
 #include <SDL_mixer.h>
 #include <physfs.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "Typedefs.h"
@@ -152,6 +153,19 @@ main(int argc, char *argv[])
     if (!PHYSFS_mount(resourcePath, "/", 1)) {
         SYS_abort("Failed to mount data archive \"%s\": %s", resourcePath, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
     }
+#elif defined(__amigaos__)
+    /* GFOS: the game's drawer holds the data (gamedata/, graphics/,
+     * sounds/, mods/); the settings, the saves and the high scores go to
+     * its User drawer, which the Installer keeps on an update. User is
+     * searched first, so a mod or a save there wins over the drawer. */
+    char userPath[1024];
+    snprintf(userPath, sizeof(userPath), "%sUser", PHYSFS_getBaseDir());
+    if (!PHYSFS_setWriteDir(userPath)) {
+        SYS_abort("Failed to set write directory to \"%s\": %s", userPath, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+    }
+    if (!PHYSFS_mount(userPath, "/", 0) || !PHYSFS_mount(PHYSFS_getBaseDir(), "/", 1)) {
+        SYS_abort("Failed to mount the game's drawer \"%s\": %s", PHYSFS_getBaseDir(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+    }
 #else
     if (!PHYSFS_setSaneConfig("FreeSAIS", "SAIS", "zip", 0, 0)) {
         SYS_abort("PhysFS failed to set default env: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
@@ -174,7 +188,12 @@ main(int argc, char *argv[])
     }
 
     // create the application window
+#ifdef __amigaos__
+    /* GFOS: SDL's software renderer on the RTG screen; no OpenGL needed. */
+    int sdlFlags = 0;
+#else
     int sdlFlags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL;
+#endif
     if (globalsettings.opt_fullscreen) {
         sdlFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
@@ -191,7 +210,11 @@ main(int argc, char *argv[])
 
 
     // create the SDL Renderer we use to stream from the intermed blitting surface to the window.
+#ifdef __amigaos__
+    sdlRend = SDL_CreateRenderer(sdlWind, -1, 0);
+#else
     sdlRend = SDL_CreateRenderer(sdlWind, -1, SDL_RENDERER_ACCELERATED);
+#endif
     if (sdlRend == NULL) {
         SYS_abort("Failed to create SDL Renderer: %s", SDL_GetError());
     }

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Strange Adventures in Infinite Space GlowIcon art: a scout ship leaving a
+     ringed planet under a star. The AmiCradle Team's own drawing; GPL 3 or
+     later, like the other Amiga files. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="planet" cx="0.35" cy="0.3" r="0.75">
+      <stop offset="0" stop-color="#d8f0ff"/>
+      <stop offset="0.45" stop-color="#4f8fe0"/>
+      <stop offset="1" stop-color="#1a2f78"/>
+    </radialGradient>
+    <radialGradient id="star" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.4" stop-color="#fff2a0"/>
+      <stop offset="1" stop-color="#ff9a1a"/>
+    </radialGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.5" stop-color="#c4ccd8"/>
+      <stop offset="1" stop-color="#5a6478"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d42a00"/>
+      <stop offset="0.6" stop-color="#ffa21c"/>
+      <stop offset="1" stop-color="#fffbd0"/>
+    </linearGradient>
+  </defs>
+  <!-- star -->
+  <circle cx="100" cy="24" r="14" fill="url(#star)" stroke="#b85a00" stroke-width="2"/>
+  <!-- planet with its ring -->
+  <ellipse cx="46" cy="80" rx="44" ry="12" fill="none" stroke="#7a5a2a" stroke-width="7" transform="rotate(-18 46 80)"/>
+  <circle cx="46" cy="80" r="30" fill="url(#planet)" stroke="#10204f" stroke-width="2"/>
+  <path d="M8 92 A44 12 -18 0 0 86 64" fill="none" stroke="#e8c070" stroke-width="5" transform="rotate(0)"/>
+  <!-- scout ship heading up and right -->
+  <g transform="translate(86 74) rotate(-35)">
+    <path d="M-30 0 L-18 -5 L-18 5 Z" fill="url(#flame)" stroke="#8a2000" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M-18 -7 L16 -4 L28 0 L16 4 L-18 7 Z" fill="url(#hull)" stroke="#20283a" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M-10 -6 L-2 -18 L6 -18 L4 -5 Z" fill="url(#hull)" stroke="#20283a" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M-10 6 L-2 18 L6 18 L4 5 Z" fill="url(#hull)" stroke="#20283a" stroke-width="2" stroke-linejoin="round"/>
+    <ellipse cx="12" cy="0" rx="6" ry="2.6" fill="#7fe6ff" stroke="#20283a" stroke-width="1.2"/>
+  </g>
+</svg>

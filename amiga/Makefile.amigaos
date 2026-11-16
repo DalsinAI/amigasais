@@ -1,0 +1,85 @@
+# Strange Adventures in Infinite Space (SAIS GPL) for GFOS (AmigaOS 3.2
+# with GFOpenUp), 68040/68060 + FPU, on GFOpenGPU's SDL 2 kit:
+# LIBS:GFOpenGPU/SDL2.module, SDL2_mixer.module and LIBS:physfs.library.
+#
+#   make -f amiga/Makefile.amigaos -j4 [STOVE=/path/to/os32-gcc16-open6]
+#
+# STOVE is a GFOpenAmigaGCC 16.2.0-open6 stove: its prefix/ has the
+# compiler, the NDK and GFOpenGPU's kit (prefix/m68k-amigaos). The game data
+# (upstream's full-data/: gamedata/, graphics/, sounds/) goes in the drawer
+# as it is; the settings, saves and high scores go to PROGDIR:User/.
+#
+# Output: build/amigaos/StrangeAdventures/ (the drawer), its .info and
+# Install-StrangeAdventures beside it.
+
+STOVE   ?= $(HOME)/AmiCradle/stoves/os32-gcc16-open6
+PREFIX  ?= $(STOVE)/prefix
+KIT     ?= $(PREFIX)/m68k-amigaos
+CC      = $(PREFIX)/bin/m68k-amigaos-gcc
+STRIP   = $(PREFIX)/bin/m68k-amigaos-strip
+# SDL and SDL_mixer are hard float: the FPU calling convention must match.
+CPU     ?= -m68040 -m68881
+# -fno-tree-loop-distribute-patterns: GCC 16's loop miscompile (the kit's
+# sdl2-config gives it for GCC 16 too).
+OPT     ?= -O2 -fomit-frame-pointer -fno-tree-loop-distribute-patterns
+
+DEFS    = -D__amigaos__
+INC     = -Isrc -I$(KIT)/include/SDL2 -I$(KIT)/include
+CFLAGS  = -noixemul $(OPT) $(CPU) -std=gnu11 -w $(DEFS) $(INC)
+LDFLAGS = -noixemul $(CPU)
+# physfs.library through its auto-open stub (GFOpenUp's GFOpenGPU part
+# installs it, with z.library).
+LIBS    = -L$(KIT)/lib -lSDL2_mixer -lSDL2 -lphysfs_auto -lm
+
+BUILD   = build/amigaos
+OBJDIR  = $(BUILD)/obj
+NAME    = StrangeAdventures
+OUT     = $(BUILD)/$(NAME)
+PROG    = StrangeAdventures
+
+SRC     = src/cards.c src/combat.c src/combat_display.c src/combat_init.c \
+          src/combat_sim.c src/combat_weapons.c src/endgame.c src/font.c \
+          src/gfx.c src/interface.c src/is_fileio.c src/main.c \
+          src/modconfig.c src/sdl_main.c src/sound.c src/sprites.c \
+          src/starmap.c src/starmap_encounters.c src/starmap_init.c \
+          src/starmap_inventory.c src/startgame.c src/textstr.c \
+          src/portable/safe_cstr.c src/sdl/abort.c src/sdl/log.c \
+          src/sdl/sdl_iface.c src/sdl/sdl_gfx.c src/sdl/sdl_sound.c \
+          src/sdl/physfsrwops.c amiga/amiga_start.c
+OBJS    = $(SRC:%.c=$(OBJDIR)/%.o)
+
+all: $(OUT)/$(PROG) package
+
+$(BUILD)/$(PROG).debug: $(OBJS)
+	@mkdir -p $(BUILD)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+$(OUT)/$(PROG): $(BUILD)/$(PROG).debug
+	@mkdir -p $(OUT)
+	$(STRIP) -o $@ $<
+
+package: $(OUT)/$(PROG) AMIGA_PORT.md README.md COPYING.md full/LICENSES.txt full/manual.txt full/mods.txt
+	mkdir -p $(OUT)/User
+	cp -R full/mods $(OUT)/
+	cp -R full-data/gamedata full-data/graphics full-data/sounds $(OUT)/
+	rm -f $(OUT)/*/CMakeLists.txt
+	cp AMIGA_PORT.md $(OUT)/ReadMe
+	cp full/README1st.txt $(OUT)/ReadMe-SAIS
+	cp full/manual.txt $(OUT)/Manual
+	cp full/mods.txt $(OUT)/Mods.txt
+	cp full/LICENSES.txt $(OUT)/Licences.txt
+	cp amiga/icons/$(PROG).info amiga/icons/ReadMe.info $(OUT)/
+	for f in ReadMe-SAIS Manual Mods.txt Licences.txt; do \
+	    cp amiga/icons/ReadMe.info $(OUT)/$$f.info; done
+	cp amiga/icons/Data.info $(OUT)/User.info
+	cp amiga/icons/$(NAME)-drawer.info $(BUILD)/$(NAME).info
+	cp amiga/Install-$(NAME) amiga/Install-$(NAME).info $(BUILD)/
+
+$(OBJDIR)/%.o: %.c $(wildcard src/*.h src/sdl/*.h)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+clean:
+	rm -rf $(BUILD)
+
+.PHONY: all package clean
