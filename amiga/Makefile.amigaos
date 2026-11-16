@@ -24,12 +24,12 @@ CPU     ?= -m68040 -m68881
 OPT     ?= -O2 -fomit-frame-pointer -fno-tree-loop-distribute-patterns
 
 DEFS    = -D__amigaos__
-INC     = -Isrc -I$(KIT)/include/SDL2 -I$(KIT)/include
+INC     = -Iamiga/physfs/include -Isrc -I$(KIT)/include/SDL2 -I$(KIT)/include
 CFLAGS  = -noixemul $(OPT) $(CPU) -std=gnu11 -w $(DEFS) $(INC)
 LDFLAGS = -noixemul $(CPU)
-# physfs.library through its auto-open stub (GFOpenUp's GFOpenGPU part
-# installs it, with z.library).
-LIBS    = -L$(KIT)/lib -lSDL2_mixer -lSDL2 -lphysfs_auto -lm
+# physfs.library: amiga/physfs/ (its header and the stub that opens it;
+# the library itself is GFOpenUp's GFOpenGPU part, with z.library).
+LIBS    = -L$(KIT)/lib -lSDL2_mixer -lSDL2 -lm
 
 BUILD   = build/amigaos
 OBJDIR  = $(BUILD)/obj
@@ -45,7 +45,7 @@ SRC     = src/cards.c src/combat.c src/combat_display.c src/combat_init.c \
           src/starmap_inventory.c src/startgame.c src/textstr.c \
           src/portable/safe_cstr.c src/sdl/abort.c src/sdl/log.c \
           src/sdl/sdl_iface.c src/sdl/sdl_gfx.c src/sdl/sdl_sound.c \
-          src/sdl/physfsrwops.c amiga/amiga_start.c
+          src/sdl/physfsrwops.c amiga/amiga_start.c amiga/physfs/physfs_auto.c
 OBJS    = $(SRC:%.c=$(OBJDIR)/%.o)
 
 all: $(OUT)/$(PROG) package

@@ -61,6 +61,9 @@ What was changed
 - amiga/: the start (stack, $VER, the User drawer), the Makefile, the
   Installer spec (amicradle scripts/ports/port_installer.py) and the
   GlowIcons (scripts/ports/port_icons.py, from art/sais.svg).
+- amiga/physfs/: physfs.library's header and the stub that opens it, from
+  DalsinAI/gfopenphysfs d3a0ad78 (the stove's kit has no PhysicsFS yet);
+  PhysicsFS itself runs in LIBS:physfs.library.
 - package/ and tools/: the stove build, the GFOpenUp part and the archive.
 - Nothing else of upstream's: its data loaders already read little-endian
   files byte by byte, so they work on the 68k as they are.

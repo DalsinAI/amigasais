@@ -1,0 +1,7 @@
+physfs.library's developer files, from DalsinAI/gfopenphysfs at commit
+d3a0ad78e2a1cb5cc32306982593a9889f2e9ba4 (physfs.library 1.1, the ABI
+GFOpenGPU's kit names as PHYSFS_COMMIT): sdk/include/ (physfs.h, proto/,
+inline/) and stub/physfs_auto.c, which opens LIBS:physfs.library before
+main(). The os32-gcc16-open6 stove's kit has no PhysicsFS yet, so the port
+carries these; PhysicsFS itself runs in physfs.library, which GFOpenUp's
+GFOpenGPU part installs. zlib licence (LICENSE).
